@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+
+<title>Simple Layout</title>
+<style type="text/css">
+
+
+
+/* ==================== 版面配置 ==================== */
+
+#container	{width: 100%;
+	margin: auto;}
+
+#content	{
+	height: 0px;
+	margin: auto;}
+/* ==================== 頁首 ==================== */
+#header_inner	{}
+
+#header h1	{}
+
+#header p	}
+
+/* ==================== 內容 ==================== */
+
+.post	{}
+
+.posttext	{}
+
+.posttext p	{}
+/* ==================== 頁尾 ==================== */
+
+#footer	{border-top:5px solid green;
+}
+#footer p	{}
+/*================================================*/
+
+
+
+</style>
+</head>
+    
+<body>
+
+
+<div id="container">
+
+<div id="head">
+<div id="header">
+<div id="header_inner">
+</div>
+</div>
+</div>
+<div id="content">
+
+<div class="post">
+	
+	<div class="posttext">
+	<script src="three.min.js"></script>
+	<script src="hammer.js"></script>
+
+		<script>
+		//hammerjs
+		    var log = document.querySelector("#log");
+		    var el = document.querySelector("#container");
+		    var START_X=0;
+		    var START_Y=0;
+		    var initScale =0;
+		    var ticking = false;
+		    var transform;
+		    var timer;
+		    var min_fov = 40;
+		    var max_fov = 100;
+		    var mc = new Hammer.Manager(el);
+		    mc.add(new Hammer.Pan({ threshold: 0, pointers: 0 }));
+    		mc.add(new Hammer.Pinch({ threshold: 0 })).recognizeWith([mc.get('pan')]);
+		    mc.on("panstart panmove", onPan);//啟動pan功能
+    		mc.on("pinchstart pinchmove", onPinch);//啟動放大縮小功能
+		    mc.on("hammer.input", function(ev) 
+		    {
+		        if(ev.isFinal) 
+		        {
+		        START_X=lon;
+		        START_Y=lat;
+		        }
+		    });
+		    //threejs
+			var camera, scene, renderer;
+			var mouseclick;
+			var t;
+			var isUserInteracting = false,
+			onMouseDownMouseX = 0, onMouseDownMouseY = 0,
+			lon = 0, onMouseDownLon = 0,
+			lat = 0, onMouseDownLat = 0,
+			phi = 0, theta = 0;
+			init();
+			animate();
+
+			function init() {
+				var container, mesh;
+				container = document.getElementById( 'container' );//圖片顯示位置
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );
+				camera.target = new THREE.Vector3( 0, 0, 0 );
+				scene = new THREE.Scene();
+				var geometry = new THREE.SphereGeometry( 500, 60, 40 );
+				geometry.scale( - 1, 1, 1 );
+				var material = new THREE.MeshBasicMaterial( {
+					map: new THREE.TextureLoader().load( 'cathedral_pano.jpg' )//圖片url
+				} );
+				mesh = new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+				//滾輪
+				document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
+
+				document.addEventListener( 'MozMousePixelScroll', onDocumentMouseWheel, false);
+				
+				document.addEventListener( 'dragover', function ( event ) {
+					event.preventDefault();
+					event.dataTransfer.dropEffect = 'copy';
+				}, false );
+				document.addEventListener( 'dragenter', function ( event ) {
+					document.body.style.opacity = 0.5;
+				}, false );
+				document.addEventListener( 'dragleave', function ( event ) {
+					document.body.style.opacity = 1;
+				}, false );
+				document.addEventListener( 'drop', function ( event ) {
+					event.preventDefault();
+					var reader = new FileReader();
+					reader.addEventListener( 'load', function ( event ) {
+						material.map.image.src = event.target.result;
+						material.map.needsUpdate = true;
+					}, false );
+					reader.readAsDataURL( event.dataTransfer.files[ 0 ] );
+					document.body.style.opacity = 1;
+				}, false );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				
+			}
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+			function onDocumentMouseDown( event ) {
+				event.preventDefault();
+				isUserInteracting = true;
+				onPointerDownPointerX = event.clientX;
+				onPointerDownPointerY = event.clientY;
+				onPointerDownLon = lon;
+				onPointerDownLat = lat;				
+			}
+			function onDocumentMouseMove( event ) {
+				if ( isUserInteracting === true ) {
+					lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
+					lat = ( event.clientY - onPointerDownPointerY ) * 0.1 + onPointerDownLat;
+				}
+			}
+			function onDocumentMouseUp( event ) {
+				isUserInteracting = false;
+
+			}
+			function onDocumentMouseWheel( event ) {
+				// WebKit
+				if ( event.wheelDeltaY ) {
+					camera.fov -= event.wheelDeltaY * 0.05;
+				// Opera / Explorer 9
+				} else if ( event.wheelDelta ) {
+					camera.fov -= event.wheelDelta * 0.05;
+				// Firefox
+				} else if ( event.detail ) {
+					camera.fov += event.detail * 1.0;
+				}
+				//
+				  //視角限制
+				  if (camera.fov < min_fov) 
+        			{
+        				camera.fov = min_fov;
+        	
+        			}
+       			 else if (camera.fov > max_fov) 
+       				{
+						camera.fov = max_fov;
+					}
+
+				console.log(' lat:'+lat+' lon:'+lon+' camera.fov:'+camera.fov)
+				camera.updateProjectionMatrix();
+				event.preventDefault();
+			}
+			function animate() {
+				requestAnimationFrame( animate );
+				update();
+			}
+			function update() {
+
+				lat = Math.max( - 85, Math.min( 85, lat ) );
+				phi = THREE.Math.degToRad( 90 - lat );
+				theta = THREE.Math.degToRad( lon );
+				camera.target.x = 500 * Math.sin( phi ) * Math.cos( theta );
+				camera.target.y = 500 * Math.cos( phi );
+				camera.target.z = 500 * Math.sin( phi ) * Math.sin( theta );
+				camera.lookAt( camera.target );
+				renderer.render( scene, camera );
+			}
+//------------------方向按鍵控制---------------------------------------------		
+			function leftd() {
+				mouseclick = true;
+				left();
+			}
+			function leftu() {
+				
+				mouseclick = false;
+				left();
+			}
+			function left(){
+				if(mouseclick==true) 
+				{
+				t = setInterval(function(){ lon -= 0.1 });
+				}
+				else
+				{
+					clearInterval(t);//刪除clock
+				}
+			}
+			function rightd( event ) {
+				mouseclick = true;
+				right();
+			}
+			function rightu( event ) {
+				
+				mouseclick = false;
+				right();
+			}
+			function right(){
+				if(mouseclick==true) 
+				{
+				t = setInterval(function(){ lon += 0.1 });
+				}
+				else
+				{
+					clearInterval(t);
+				}
+			}
+			function upd( event ) {
+				mouseclick = true;
+				up();
+			}
+			function upu( event ) {
+				
+				mouseclick = false;
+				up();
+			}
+			function up(){
+				if(mouseclick==true) 
+				{
+				t = setInterval(function(){ lat -= 0.1 });
+				}
+				else
+				{
+					clearInterval(t);
+
+				}
+			}
+			function downd( event ) {
+				mouseclick = true;
+				down();
+			}
+			function downu( event ) {
+				
+				mouseclick = false;
+				down();
+			}
+			function down(){
+				if(mouseclick==true){
+					t = setInterval(function(){ lat += 0.1 });
+				}
+				else{
+					clearInterval(t);
+				}
+			}
+			function down( event ) {
+				lat -= 1;
+			}
+//------------------方向按鍵控制---------------------------------------------
+
+			//hammerjs
+    function onPan(ev) {
+        lon=START_X+ev.deltaX/-8;
+        lat=START_Y+ev.deltaY/8;
+        console.log(' lat:'+lat+' lon:'+lon+' fov:'+camera.fov);//顯示經緯度與視角大小
+    }
+    var initScale;
+
+    function onPinch(ev) {//滑放大縮小
+        if(ev.type == 'pinchstart') {
+            initScale = camera.fov || 1;
+        }
+        
+       	camera.fov = initScale / ev.scale;
+       	//限制視角大小
+        if (camera.fov < min_fov) 
+        {
+        	camera.fov = min_fov;
+        	
+        }
+        else if (camera.fov > max_fov) 
+        {
+			camera.fov = max_fov;
+		}	
+        camera.updateProjectionMatrix();
+    }
+		</script>
+	</div>
+</div>
+</div>
+<div id="foot">
+<div id="footer">
+<button onmousedown="leftd()" onmouseup="leftu()" >←</button>
+<button onmousedown="rightd()" onmouseup="rightu()" >→</button>
+<button onmousedown="upd()" onmouseup="upu()" >↑</button>
+<button onmousedown="downd()" onmouseup="downu()" >↓</button>
+</div>
+</div>
+</div>
+</body>
+</html>
